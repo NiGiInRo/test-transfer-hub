@@ -38,8 +38,11 @@ async def notify_backoffice(transfer_id: int, status: str, idempotency_key: str)
         "status": status,
         "idempotency_key": idempotency_key
     }
+    url = f"{BACKOFFICE_URL}/webhooks/transfer_result"
+    print(f"Llamando webhook: {url} con payload: {payload}")
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            await client.post(f"{BACKOFFICE_URL}/webhooks/transfer_result", json=payload)
+            response = await client.post(url, json=payload)
+            print(f"Webhook respondió: {response.status_code} - {response.text}")
     except httpx.RequestError as e:
         print(f"Error notificando al backoffice: {e}")
