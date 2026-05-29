@@ -1,0 +1,75 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: transfer-hub-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: backoffice_development
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: transfer-hub-redis
+    ports:
+      - "6379:6379"
+
+  rails:
+    build:
+      context: ./backoffice
+      dockerfile: Dockerfile
+    container_name: transfer-hub-rails
+    working_dir: /app
+    command: bash -lc "bundle install && bin/rails db:prepare && bin/rails server -b 0.0.0.0 -p 3000"
+    volumes:
+      - ./backoffice:/app
+      - bundle_cache:/usr/local/bundle
+    ports:
+      - "3000:3000"
+    environment:
+      RAILS_ENV: development
+      DATABASE_URL: postgres://postgres:password@postgres:5432/backoffice_development
+      REDIS_URL: redis://redis:6379/0
+      CORE_BANCARIO_URL: http://core-bancario:8000
+    depends_on:
+      - postgres
+      - redis
+
+  sidekiq:
+    build:
+      context: ./backoffice
+      dockerfile: Dockerfile
+    container_name: transfer-hub-sidekiq
+    working_dir: /app
+    command: bash -lc "bundle install && bundle exec sidekiq"
+    volumes:
+      - ./backoffice:/app
+      - bundle_cache:/usr/local/bundle
+    environment:
+      RAILS_ENV: development
+      DATABASE_URL: postgres://postgres:password@postgres:5432/backoffice_development
+      REDIS_URL: redis://redis:6379/0
+      CORE_BANCARIO_URL: http://core-bancario:8000
+    depends_on:
+      - postgres
+      - redis
+
+  core-bancario:
+    build:
+      context: ./core-bancario
+    container_name: transfer-hub-core
+    working_dir: /app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./core-bancario:/app
+    ports:
+      - "8000:8000"
+    environment:
+      BACKOFFICE_URL: http://rails:3000
+
+volumes:
+  postgres_data:
+  bundle_cache:

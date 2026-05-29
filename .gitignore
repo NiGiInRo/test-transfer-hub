@@ -1,0 +1,21 @@
+# Rails
+backoffice/.bundle
+backoffice/log/
+backoffice/tmp/
+backoffice/storage/
+backoffice/public/assets
+backoffice/.env
+
+# Python
+core-bancario/__pycache__/
+core-bancario/*.pyc
+core-bancario/.env
+core-bancario/venv/
+core-bancario/.venv/
+
+# Docker
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
